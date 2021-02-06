@@ -1,0 +1,342 @@
+<table>
+  <th>java中要想实现多线程</th>
+  <tr>
+    <td>
+1. 继承 Thread 类（重点）（Thread本身就是实现Runable接口）<br>
+2. 实现 Runable 接口（重点且推荐）<br>
+3. 实现 Callable 接口（了解）<br>
+    </td>
+  </tr>
+  <tr>
+    <td>
+    几个问题：
+1. 不能通过直接调用 run()的方式启动线程<br>
+2. 再启动一个线程，不能还让已经 start()的线程去执行，会报 IllgealThread 异常<br>
+3. 线程存在安全问题<br>
+    </td>
+  </tr>
+  <tr>
+    <td>
+    不建议使用：避免OOP单继承局限性
+    </td>
+  </tr>
+</table>
+
+## &#127800; 继承java.lang.Thread类 &#127800;
+
+
+<details>
+<summary>&#127808; 继承Thread &#127808;</summary>
+  
+```java
+package Multithreading;
+
+/**
+ * 多线程的创建，方式一：继承于Thread类
+ * 1. 创建一个继承于Thread类的子类
+ * 2. 重写Thread类的run() --> 将此线程执行的操作声明在run()中
+ * 3. 创建Thread类的子类的对象
+ * 4. 通过此对象调用start()
+ * <p>
+ * 例子：遍历100以内的所有的偶数
+ *
+ * @author shkstart
+ * @create 2019-02-13 上午 11:46
+ */
+//1. 创建一个继承于Thread类的子类
+class MyThread extends Thread {
+    //2. 重写Thread类的run()
+    @Override
+    public void run() {
+        for (int i = 0; i < 100; i++) {
+            if(i % 2 == 0){
+                System.out.println(Thread.currentThread().getName() + ":" + i);
+            }
+        }
+    }
+}
+class ThreadTest {
+    public static void main(String[] args) {
+        //3. 创建Thread类的子类的对象
+        MyThread t1 = new MyThread();
+        //4.通过此对象调用start():①启动当前线程 ② 调用当前线程的run()
+        t1.start();
+        //问题一：我们不能通过直接调用run()的方式启动线程。
+//        t1.run();
+        //问题二：再启动一个线程，遍历100以内的偶数。不可以还让已经start()的线程去执行。会报IllegalThreadStateException
+//        t1.start();
+        //我们需要重新创建一个线程的对象
+        MyThread t2 = new MyThread();
+        t2.start();
+        //如下操作仍然是在main线程中执行的。
+        for (int i = 0; i < 100; i++) {
+            if(i % 2 == 0){
+                System.out.println(Thread.currentThread().getName() + ":" + i + "***********main()************");
+            }
+        }
+    }
+
+}
+```
+  
+- 程序启动运行main时候，java虚拟机启动一个进程，主线程main在main()调用时候被创建。随着调用MitiSay的两个对象的start方法，另外两个线程也启动了，这样，整个应用就在多线程下运行。 
+- start()方法的调用后并不是立即执行多线程代码，而是使得该线程变为可运行态（Runnable），什么时候运行是由操作系统决定的。 
+- Thread.sleep()方法调用目的是不让当前线程独自霸占该进程所获取的CPU资源，以留出一定时间给其他线程执行的机会。 
+- 实际上所有的多线程代码执行顺序都是不确定的，每次执行的结果都是随机的。 
+- 但是start方法重复调用的话，即不可以还让已经start()的线程去执行。会报IllegalThreadStateException`<br>
+会出现java.lang.IllegalThreadStateException异常。
+  - `MyThread t1 = new MyThread();`<br>
+      `t1.start();`<br>
+      `t1.start();`<br>
+
+  - ```java
+      Exception in thread "main" java.lang.IllegalThreadStateException
+	    at java.lang.Thread.start(Thread.java:705)
+	    at Multithreading.ThreadTest.main(MyThread.java:53)
+    ```
+
+</details>
+
+<details>
+<summary>&#127808; 练习：图片多线程下载 &#127808;</summary>
+  
+先导入commons-io 的新版本jar包
+```java
+package Multithreading.Thread.downloadPicture;
+
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+
+public class TestThreadDownload extends Thread{
+
+    private String url;
+    private String name;
+    public TestThreadDownload(String url, String name){
+        this.url = url;
+        this.name = name;
+    }
+    @Override
+    public void run() {
+        WebDownloader wd = new WebDownloader();
+        try {
+            wd.downloader(url, name);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("下载文件名为: " + name);
+    }
+
+    public static void main(String[] args){
+        TestThreadDownload t1 = new TestThreadDownload("https://img-blog.csdn.net/20170803112501394?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbHlubl9LdW4=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast","1.jpg");
+        TestThreadDownload t2 = new TestThreadDownload("https://tse3-mm.cn.bing.net/th/id/OIP.Ogv6qqXdo6wwSLqcFDzRJwHaE7?w=265&h=180&c=7&o=5&dpr=1.25&pid=1.7","2.jpg");
+        TestThreadDownload t3 = new TestThreadDownload("https://th.bing.com/th/id/R051691e67d50c89cff071a9a3b71213a?rik=9HGl9CSKUqEF%2bA&riu=http%3a%2f%2fn.sinaimg.cn%2ftransform%2f20151025%2f8A6G-fxizwsi5589061.jpg&ehk=WdEWkQI5xYXrH8PMzM8gNwURNgQA4zpkujNPd9zq4mw%3d&risl=&pid=ImgRaw","3.jpg");
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+}
+
+
+class WebDownloader{
+
+    // 构造方法
+    public void downloader(String url, String name) throws IOException {
+        try {
+            //
+            FileUtils.copyURLToFile(new URL(url), new File(name));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("IO异常，downloader出现问题");
+        }
+    }
+}
+
+```
+</details>
+
+<details>
+<summary>&#127808; 多线程匿名方法 &#127808;</summary>
+  
+```java
+package Multithreading.Thread;
+
+public class ThreadAnonymous {
+    public static void main(String[] args){
+        // 由于线程特殊性，若只是用一次，使用匿名方法
+        new Thread(){
+            @Override
+            public void run() {
+                for (int i = 0; i < 10; i++) {
+                    if ((i & 1) == 1){
+                        System.out.println(Thread.currentThread().getName() + " : " + i);
+                    }
+                }
+            }
+        }.start();
+
+        new Thread(){
+            @Override
+            public void run() {
+                for (int i = 0; i < 10; i++) {
+                    if ((i & 1) == 1){
+                        System.out.println(Thread.currentThread().getName() + " : " + i);
+                    }
+                }
+            }
+        }.start();
+    }
+}
+
+```
+</details>
+
+<details>
+<summary>&#127808; Thread中的常用方法  &#127808;</summary>
+  
+```java
+package Multithreading.Thread;
+
+/**
+ * 测试Thread中的常用方法：
+ * 1. start():启动当前线程；调用当前线程的run()
+ * 2. run(): 通常需要重写Thread类中的此方法，将创建的线程要执行的操作声明在此方法中
+ * 3. currentThread():静态方法，返回执行当前代码的线程
+ * 4. getName():获取当前线程的名字
+ * 5. setName():设置当前线程的名字
+ * 6. yield():释放当前cpu的执行权
+ * 7. join():在线程a中调用线程b的join(),此时线程a就进入阻塞状态，直到线程b完全执行完以后，线程a才结束阻塞状态。
+ * 8. stop():已过时。当执行此方法时，强制结束当前线程。
+ * 9. sleep(long millitime):让当前线程“睡眠”指定的millitime毫秒。在指定的millitime毫秒时间内，当前线程是阻塞状态。
+ * 10. isAlive():判断当前线程是否存活
+ *
+ * Thread()：创建新的Thread对象
+ * Thread(String threadName)：创建线程并指定线程实例名
+ * Thread(Runnable target)：指定创建线程的目标对象，它实现了Runnable接口中的run方法
+ * Thread(Runnable target, String name)：创建新的Thread对象
+ * getPriority():获取线程的优先级
+ * setPriority(int p):设置线程的优先级
+ *
+ *
+ * 线程的优先级：
+ * 1.
+ * MAX_PRIORITY：10
+ * MIN _PRIORITY：1
+ * NORM_PRIORITY：5  -->默认优先级
+ * 2.如何获取和设置当前线程的优先级：
+ * getPriority():获取线程的优先级
+ * setPriority(int p):设置线程的优先级
+ *
+ * 说明：高优先级的线程要抢占低优先级线程cpu的执行权。但是只是从概率上讲，高优先级的线程高概率的情况下
+ * 被执行。并不意味着只有当高优先级的线程执行完以后，低优先级的线程才执行。
+ */
+public class ThreadCommonMethods extends Thread{
+    @Override
+    public void run() {
+        for (int i = 0; i < 10; i++) {
+            if (i % 2 == 0) {
+//                try {
+//                    sleep(10);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+                System.out.println(Thread.currentThread().getName() + ":" + Thread.currentThread().getPriority() + ":" + i);
+            }
+//            if(i % 20 == 0){
+//                yield();
+//            }
+        }
+    }
+
+    public ThreadCommonMethods(String name) {
+        super(name);
+    }
+}
+
+class ThreadMethodTest {
+    public static void main(String[] args) {
+        ThreadCommonMethods h1 = new ThreadCommonMethods("Thread1: ");
+//        h1.setName("线程一");
+        //设置分线程的优先级
+        h1.setPriority(Thread.MAX_PRIORITY);
+        h1.start();
+
+        //给主线程命名
+        Thread.currentThread().setName("主线程: ");
+        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+        for (int i = 0; i < 10; i++) {
+            if (i % 2 == 0) {
+                System.out.println(Thread.currentThread().getName() + ":" + Thread.currentThread().getPriority() + ":" + i);
+            }
+//            if(i == 20){
+//                try {
+//                    h1.join();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+        }
+//        System.out.println(h1.isAlive());
+    }
+}
+```
+</details>
+
+<details>
+<summary>&#127808; 线程问题待解决 &#127808;</summary>
+  
+##### 从输出窗口发现有同一张票被不同窗口同时卖出
+  
+> window1: ：卖票，票号为：100<br>
+> window2: ：卖票，票号为：100<br>
+> window2: ：卖票，票号为：99<br>
+> window2: ：卖票，票号为：98<br>
+> ...
+
+```java
+package Multithreading.Thread.SellTicketsWindows_Thread;
+
+public class SellWindow extends Thread {
+
+    private static int ticket = 100;
+
+    @Override
+    public void run() {
+
+        while (true) {
+            if (ticket > 0) {
+                System.out.println(getName() + "：卖票，票号为：" + ticket);
+                ticket--;
+            } else {
+                break;
+            }
+        }
+    }
+}
+```
+
+```java
+package Multithreading.Test;
+
+import Multithreading.Thread.SellTicketsWindows_Thread.SellWindow;
+
+public class SellWindowTest {
+    public static void main(String[] args){
+        SellWindow s1 = new SellWindow();
+        SellWindow s2 = new SellWindow();
+        SellWindow s3 = new SellWindow();
+
+        s1.setName("window1: ");
+        s2.setName("window2: ");
+        s3.setName("window3: ");
+
+        s1.start();
+        s2.start();
+        s3.start();
+    }
+}
+
+```
+</details>
