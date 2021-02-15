@@ -1,4 +1,6 @@
-# &#127800; Java多线程 —— 基础篇
+# &#127800; Java多线程 —— [基础篇](https://www.bilibili.com/video/BV1V4411p7EF "遇见狂神说")
+
+[搭配"狂神说Java"学习](https://www.bilibili.com/video/BV1V4411p7EF)
 - [1.继承Thread](基础篇/1.继承Thread.md)
 - [2.实现Runnable](基础篇/2.实现Runnable.md)
 - [3.Thread常用方法](基础篇/3.Thread常用方法.md)
